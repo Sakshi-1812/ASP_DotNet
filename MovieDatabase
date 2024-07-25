@@ -1,0 +1,60 @@
+using Microsoft.AspNetCore.Mvc;
+using WebApplication2.Models;
+
+namespace WebApplication2.Controllers
+{
+    public class MovieController : Controller
+    {
+        private readonly MovieDbContext _dbContext;
+        public MovieController(MovieDbContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
+        public IActionResult AllMovies()
+        {
+            var movies = _dbContext.Movies.ToList();
+            return View(movies);
+        }
+        public IActionResult Edit(string? title)
+        {
+            if (title == null)
+            {
+                return NotFound();
+            }
+            var record = _dbContext.Movies.FirstOrDefault(m => m.MovieTitle == title);
+            if (record == null)
+            {
+                return NotFound();
+            }
+            return View(record);
+        }
+        [HttpPost]
+        public IActionResult Edit(Movie movie)
+        {
+            var title = movie.MovieTitle;
+            var record = _dbContext.Movies.FirstOrDefault(m => m.MovieTitle == title);
+            if (record == null)
+            {
+                return NotFound();
+            }
+            record.MovieTitle = movie.MovieTitle;
+            record.MovieDirector = movie.MovieDirector;
+            record.ActorName = movie.ActorName;
+            record.ActressName = movie.ActressName;
+            record.Rating = movie.Rating;
+            _dbContext.SaveChanges();
+            return RedirectToAction("AllMovies");
+        }
+        public IActionResult AddNew() => View(new Movie());
+        [HttpPost]
+        public IActionResult AddNew(Movie movie)
+        {
+            if(movie != null)
+            {
+                _dbContext.Movies.Add(movie);
+                _dbContext.SaveChanges();
+            }
+            return RedirectToAction("AllMovies");
+        }
+    }
+}

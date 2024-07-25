@@ -1,0 +1,105 @@
+movie controller : 
+
+using Microsoft.AspNetCore.Mvc;
+using WebApplication2.Models;
+using System.Collections.Generic;
+
+namespace WebApplication2.Controllers
+{
+    public class MovieController : Controller
+    {
+        private readonly MovieDbContext _dbContext;
+
+        public MovieController(MovieDbContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
+
+        public IActionResult AllMovies()
+        {
+            // Retrieve movies from the database
+            var movies = _dbContext.Movies.ToList();
+
+            // Sort movies by Rating and then by MovieTitle
+            movies.Sort();
+
+            return View(movies);
+        }
+
+        public IActionResult Edit(string? title)
+        {
+            if (title == null)
+            {
+                return NotFound();
+            }
+            var record = _dbContext.Movies.FirstOrDefault(m => m.MovieTitle == title);
+            if (record == null)
+            {
+                return NotFound();
+            }
+            return View(record);
+        }
+
+        [HttpPost]
+        public IActionResult Edit(Movie movie)
+        {
+            var title = movie.MovieTitle;
+            var record = _dbContext.Movies.FirstOrDefault(m => m.MovieTitle == title);
+            if (record == null)
+            {
+                return NotFound();
+            }
+            record.MovieTitle = movie.MovieTitle;
+            record.MovieDirector = movie.MovieDirector;
+            record.ActorName = movie.ActorName;
+            record.ActressName = movie.ActressName;
+            record.Rating = movie.Rating;
+            _dbContext.SaveChanges();
+            return RedirectToAction("AllMovies");
+        }
+
+        public IActionResult AddNew() => View(new Movie());
+
+        [HttpPost]
+        public IActionResult AddNew(Movie movie)
+        {
+            if (movie != null)
+            {
+                _dbContext.Movies.Add(movie);
+                _dbContext.SaveChanges();
+            }
+            return RedirectToAction("AllMovies");
+        }
+    }
+}
+
+
+movie.cs file:
+
+using System;
+
+namespace WebApplication2.Models
+{
+    public class Movie : IComparable<Movie>
+    {
+        public int Id { get; set; }
+        public string MovieTitle { get; set; }
+        public string MovieDirector { get; set; }
+        public string ActorName { get; set; }
+        public string ActressName { get; set; }
+        public int Rating { get; set; }
+
+        public int CompareTo(Movie other)
+        {
+            // Compare by Rating (descending)
+            int ratingComparison = other.Rating.CompareTo(Rating);
+            if (ratingComparison != 0)
+            {
+                return ratingComparison;
+            }
+
+            // If ratings are equal, compare by MovieTitle (ascending)
+            return MovieTitle.CompareTo(other.MovieTitle);
+        }
+    }
+}
